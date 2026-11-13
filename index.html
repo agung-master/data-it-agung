@@ -98,6 +98,20 @@ dialog::backdrop{background:rgba(5,10,18,.55)}
 #busy{position:fixed;inset:0 0 auto 0;height:3px;background:var(--pri);transform-origin:left;animation:bar 1s infinite;z-index:100}
 @keyframes bar{0%{transform:scaleX(0)}100%{transform:scaleX(1);opacity:.2}}
 
+.sact{display:flex;gap:6px;flex-wrap:wrap;padding:12px 16px 0}
+.sact .btn,.addrow{height:32px;font-size:.8rem;padding:0 10px}
+.tact{display:flex;gap:8px;flex-wrap:wrap;padding:0 16px 14px}
+th.act,td.act{width:1%;white-space:nowrap;text-align:right}td.act .mini{margin-left:4px}
+.note .nb{display:flex;gap:4px;margin-left:auto}
+.warn{margin:0 0 14px;padding:10px 14px;border-radius:10px;background:var(--warn-bg);border:1px solid var(--warn-bd);color:var(--warn-tx);font-size:.88rem}
+.addsec{width:100%;height:46px;border:2px dashed var(--bd);border-radius:14px;color:var(--mut);font-weight:600}.addsec:hover{border-color:var(--pri);color:var(--pri)}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.fgrid .wide{grid-column:1/-1}
+.fld textarea{padding:10px 12px;border-radius:10px;border:1px solid var(--bd);background:var(--hd);font-size:.95rem;color:var(--tx);resize:vertical}
+.fld small{color:var(--mut);font-size:.76rem}
+.pmsg{min-height:20px;font-size:.85rem;color:var(--bad);text-align:center}
+#em.on{background:var(--pri);border-color:var(--pri);color:var(--pri-t);font-weight:600}
+.logl div{padding:6px 0;border-bottom:1px solid var(--bd);font-size:.82rem}.logl span{color:var(--mut)}
+@media(max-width:700px){.fgrid{grid-template-columns:1fr}td.act{display:flex;justify-content:flex-end;gap:6px}td.act::before{display:none}}
 @media(max-width:900px){
  #app{display:block}
  .side{position:sticky;top:0;z-index:20;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:10px 14px;border-right:0;border-bottom:1px solid var(--bd);overflow:visible}
@@ -148,6 +162,7 @@ dialog::backdrop{background:rgba(5,10,18,.55)}
    <input id="q" type="search" placeholder="Cari perangkat, IP, user… (tekan / )" oninput="onSearch()" autocomplete="off">
    <label class="chk"><input type="checkbox" id="all" onchange="onSearch()"> Semua sheet</label>
    <button class="btn" id="mk" onclick="toggleMask()">🙈 Sandi tersembunyi</button>
+   <button class="btn" id="em" onclick="toggleEdit()">✏️ Mode edit</button>
    <button class="btn" id="col" onclick="toggleAll()">⇕ Ciutkan</button>
    <button class="btn" onclick="load(cur,true)" title="Muat ulang">🔄</button>
   </div>
@@ -165,17 +180,21 @@ dialog::backdrop{background:rgba(5,10,18,.55)}
 
 <dialog id="dAdm"><div class="dh">Kunci dan backup<button class="mini" onclick="dAdm.close()" aria-label="Tutup">✕</button></div>
  <div class="db" id="admBody"></div></dialog>
+<dialog id="dPin"><div class="dh"><span>🔑 Konfirmasi PIN</span><button class="mini" onclick="pinCancel()" aria-label="Batal">✕</button></div>
+ <div class="db" style="align-items:center"><p class="hint" id="pD" style="margin:0;text-align:center"></p><div class="dots" id="pdots" style="width:100%"></div><div class="pmsg" id="pmsg" role="alert"></div><div class="pad" id="ppad" style="width:100%;max-width:300px"></div></div></dialog>
+<dialog id="dEdit"><div class="dh"><span id="edT"></span><button class="mini" onclick="dEdit.close()" aria-label="Tutup">✕</button></div><div class="db" id="edB"></div>
+ <div class="df"><button class="btn" onclick="dEdit.close()">Batal</button><button class="btn pri" id="edOk"></button></div></dialog>
 <div id="toast"></div>
 
 <script>
 /* ★★★ TEMPEL DISINI ★★★ URL Web App (berakhiran /exec). Tidak perlu diisi jika dibuka dari link Apps Script. */
-const SCRIPT_URL='https://script.google.com/macros/s/AKfycbwaWjFrJnXfPmHFMX63ANn4qftQ2xv8-mn1wjsfOq4AKG-Cig8aNCN5ujX3Cb3PC7XW3w/exec';
+const SCRIPT_URL='https://script.google.com/macros/s/AKfycby7zCpjZTeWc7uIAFrCIUmXaXXzXa-K2fxsL_Pb_luxE_HbzItZUYvqX13fi13IBVzcVQ/exec';
 
 const IN_GAS=typeof google!=='undefined'&&google.script&&google.script.run;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const st={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
-let PIN='',LEN=0,S=null,cur=null,cache={},mask=true,entry='',locked=false,idle=null,allMode=false,collapsed=new Set(),curStat={sec:0,ent:0},BR={name:'Data IT KSU',sub:'Data jaringan dan perangkat'};
+let cacheN={},REG=[],editing=false,PIN='',LEN=0,S=null,cur=null,cache={},mask=true,entry='',locked=false,idle=null,allMode=false,collapsed=new Set(),curStat={sec:0,ent:0},BR={name:'Data IT KSU',sub:'Data jaringan dan perangkat'};
 
 function toast(m){const t=$('toast');t.textContent=m;t.className='s';clearTimeout(toast.t);toast.t=setTimeout(()=>t.className='',2200)}
 function busy(on){let b=$('busy');if(on&&!b){b=document.createElement('div');b.id='busy';document.body.appendChild(b)}else if(!on&&b)b.remove()}
@@ -197,17 +216,18 @@ async function saveName(){const n=$('inName').value.trim();if(!n)return toast('N
  catch(e){toast('❌ '+e.message)}$('svName').disabled=false}
 
 /* ---------- server ---------- */
-async function call(action,p={}){
- busy(true);
+async function call(action,p0={}){
+ busy(true);const p={...p0},K=p._pin||PIN;delete p._pin;
  try{
   if(IN_GAS){
-   const G={pinlen:()=>['api_pinlen'],check:()=>['api_check',PIN],init:()=>['api_init',PIN],data:p=>['api_data',p.name,PIN],
-    lock:p=>['api_lock',p.name,p.on==='1',PIN],lockAll:p=>['api_lockAll',p.on==='1',PIN],backup:()=>['api_backup',PIN],
-    auto:p=>['api_auto',p.mode,Number(p.jam),PIN],backups:()=>['api_backups',PIN],settings:p=>['api_setSettings',p.name,p.sub,PIN]}[action](p);
+   const G={pinlen:()=>['api_pinlen'],check:()=>['api_check',K],init:()=>['api_init',K],data:p=>['api_data',p.name,K],
+    lock:p=>['api_lock',p.name,p.on==='1',K],lockAll:p=>['api_lockAll',p.on==='1',K],backup:()=>['api_backup',K],
+    auto:p=>['api_auto',p.mode,Number(p.jam),K],backups:()=>['api_backups',K],settings:p=>['api_setSettings',p.name,p.sub,K],
+    edit:p=>['api_edit',p.op,p.json,K],log:()=>['api_log',K]}[action](p);
    return await new Promise((res,rej)=>google.script.run.withSuccessHandler(res).withFailureHandler(e=>rej(new Error(e.message||e)))[G[0]](...G.slice(1)));
   }
   if(!/^https:\/\/script\.google\.com\//.test(SCRIPT_URL))throw new Error('URL Web App belum diisi (SCRIPT_URL)');
-  const q=new URLSearchParams({action,...p});if(action!=='pinlen')q.set('key',PIN);
+  const q=new URLSearchParams({action,...p});if(action!=='pinlen')q.set('key',K);
   const j=await(await fetch(SCRIPT_URL+'?'+q)).json();
   if(!j.ok)throw new Error(j.error);return j.data;
  }finally{busy(false)}}
@@ -218,6 +238,7 @@ function drawPad(){$('pad').innerHTML=['1','2','3','4','5','6','7','8','9','C','
 $('pad').addEventListener('click',e=>{const b=e.target.closest('button');if(b)key(b.dataset.k)});
 const onLogin=()=>!$('login').classList.contains('hide');
 document.addEventListener('keydown',e=>{
+ if($('dPin').open){if(/^\d$/.test(e.key))pkey(e.key);else if(e.key==='Backspace')pkey('⌫');return}
  if(onLogin()){if(!LEN)return;if(/^\d$/.test(e.key))key(e.key);else if(e.key==='Backspace')key('⌫');else if(e.key==='Escape')key('C');return}
  if(e.key==='/'&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)&&!document.querySelector('dialog[open]')){e.preventDefault();$('q').focus()}});
 document.addEventListener('paste',e=>{if(!onLogin()||!LEN)return;((e.clipboardData||window.clipboardData).getData('text')||'').replace(/\D/g,'').split('').forEach(key)});
@@ -246,7 +267,7 @@ async function enter(){
  await load(S.sheets[0].name);resetIdle()}
 function logout(){
  try{sessionStorage.removeItem('ksu_pin')}catch(e){}
- PIN='';entry='';cache={};S=null;clearTimeout(idle);document.querySelectorAll('dialog[open]').forEach(d=>d.close());
+ PIN='';entry='';cache={};cacheN={};editing=false;emUI();S=null;clearTimeout(idle);document.querySelectorAll('dialog[open]').forEach(d=>d.close());
  $('app').classList.add('hide');$('out').innerHTML='';$('q').value='';$('login').classList.remove('hide');lmsg('');drawDots()}
 function resetIdle(){clearTimeout(idle);idle=setTimeout(()=>{logout();lmsg('Sesi berakhir karena tidak dipakai',true)},10*60*1000)}
 ['click','keydown','touchstart','scroll'].forEach(ev=>document.addEventListener(ev,()=>{if(S)resetIdle()},{passive:true}));
@@ -255,22 +276,25 @@ function sheetsUI(){$('sheets').innerHTML=S.sheets.map((x,i)=>`<button class="sh
 $('sheets').addEventListener('click',e=>{const b=e.target.closest('.sh1');if(b){$('q').value='';$('all').checked=false;allMode=false;load(S.sheets[+b.dataset.i].name)}});
 async function load(n,force){
  cur=n;sheetsUI();$('out').innerHTML='<div class="empty">Memuat…</div>';
- try{if(force||!cache[n])cache[n]=(await call('data',{name:n})).values;const p=parse(cache[n]);curStat={sec:p.length,ent:p.reduce((a,s)=>a+s.items.reduce((b,i)=>b+(i.tbl?i.tbl.rows.length:0),0),0)};render()}
+ try{if(force||!cache[n])await fetchSheet(n);const p=parse(cache[n],cacheN[n]);curStat={sec:p.length,ent:p.reduce((a,s)=>a+s.items.reduce((b,i)=>b+(i.tbl?i.tbl.rows.length:0),0),0)};render()}
  catch(err){$('out').innerHTML='<div class="empty">'+esc(err.message)+'</div>'}}
 async function onSearch(){
  allMode=$('all').checked;const q=$('q').value.trim();
  if(allMode&&q){const miss=S.sheets.filter(x=>!cache[x.name]);
-  if(miss.length)try{await Promise.all(miss.map(async x=>cache[x.name]=(await call('data',{name:x.name})).values))}catch(e){toast('❌ '+e.message)}}
+  if(miss.length)try{await Promise.all(miss.map(x=>fetchSheet(x.name)))}catch(e){toast('❌ '+e.message)}}
  render()}
 
-/* baris mentah -> bagian, catatan, tabel */
-function parse(rows){
- const blocks=[];let sec=null,tbl=null;
- const ns=t=>{sec={title:t,items:[]};blocks.push(sec);tbl=null};
- rows.forEach(r=>{const c=r.map(x=>String(x??'').trim()),f=c.filter(Boolean);if(!f.length)return;if(!sec)ns('');
-  if(f.length===1){if(/^note\b/i.test(f[0])){sec.items.push({note:f[0].replace(/^note\s*:?\s*/i,'')});tbl=null}else ns(f[0]);return}
-  if(/^(no|nomor)\.?$/i.test(c[0])){tbl={head:c,rows:[]};sec.items.push({tbl});return}
-  if(!tbl){tbl={head:null,rows:[]};sec.items.push({tbl})}tbl.rows.push(c)});
+/* baris mentah -> bagian, catatan, tabel (membawa nomor baris asli spreadsheet) */
+function parse(rows,nums){
+ nums=nums||[];const blocks=[];let sec=null,tbl=null;
+ const ns=(t,r,c)=>{sec={title:t,tr:r,tc:c,items:[],last:r};blocks.push(sec);tbl=null};
+ rows.forEach((row,i)=>{const R=nums[i]||0,c=row.map(x=>String(x??'').trim()),f=c.filter(Boolean);if(!f.length)return;if(!sec&&!(f.length===1&&!/^note\b/i.test(f[0])))ns('',0,0);
+  if(f.length===1){const ci=c.findIndex(Boolean);
+   if(/^note\b/i.test(f[0])){sec.items.push({note:f[0].replace(/^note\s*:?\s*/i,''),raw:f[0],r:R,c:ci});sec.last=R;tbl=null}
+   else ns(f[0],R,ci);return}
+  c.r=R;sec.last=R;
+  if(/^(no|nomor)\.?$/i.test(c[0])){tbl={head:c,hr:R,rows:[]};sec.items.push({tbl});return}
+  if(!tbl){tbl={head:null,hr:0,rows:[]};sec.items.push({tbl})}tbl.rows.push(c)});
  return blocks}
 const isPW=h=>/pass|sandi|pin/i.test(h||''),isNo=h=>/^(no|nomor)/i.test(h||'');
 function hl(t,q){const e=esc(t);if(!q)return e;const i=t.toLowerCase().indexOf(q);return i<0?e:esc(t.slice(0,i))+'<mark>'+esc(t.slice(i,i+q.length))+'</mark>'+esc(t.slice(i+q.length))}
@@ -278,24 +302,30 @@ function cellHTML(v,h,q){
  if(/^https?:\/\/\S+$/i.test(v))return`<a href="${esc(v)}" target="_blank" rel="noopener noreferrer">${hl(v,q)}</a>`;return hl(v,q)}
 
 function secHTML(sn,sec,q,showSheet){
- let body='',rowsN=0;const key=sn+'::'+sec.title,secHit=q&&sec.title.toLowerCase().includes(q);
+ let body='',rowsN=0;const key=sn+'::'+sec.title+'::'+sec.tr,secHit=q&&sec.title.toLowerCase().includes(q),ed=editing&&!showSheet;
+ const B=(a,o,txt,cls)=>`<button class="${cls||'btn'}" data-ed="${a}" data-i="${reg(o)}">${txt}</button>`;
  sec.items.forEach(it=>{
-  if(it.note!==undefined){if(!q||secHit||it.note.toLowerCase().includes(q))body+=`<div class="note"><i>ℹ️</i><span>${hl(it.note,q)}</span></div>`;return}
+  if(it.note!==undefined){if(!q||secHit||it.note.toLowerCase().includes(q))body+=`<div class="note"><i>ℹ️</i><span>${hl(it.note,q)}</span>${ed?`<span class="nb">${B('editNote',{n:it},'✏️','mini')}${B('delNote',{n:it},'🗑','mini')}</span>`:''}</div>`;return}
   const {head,rows}=it.tbl,w=Math.max(head?head.length:0,...rows.map(r=>r.length)),keep=[];
   for(let c=0;c<w;c++)if((head&&head[c])||rows.some(r=>r[c]))keep.push(c);
-  const rs=rows.filter(r=>!q||secHit||r.join(' ').toLowerCase().includes(q));if(!rs.length)return;rowsN+=rs.length;
+  const rs=rows.filter(r=>!q||secHit||r.join(' ').toLowerCase().includes(q));
+  if(!rs.length&&!(ed&&!rows.length))return;rowsN+=rs.length;
+  const T={head,keep,w,rows,hr:it.tbl.hr,after:rows.length?rows[rows.length-1].r:it.tbl.hr};
   const uc=head?head.findIndex(h=>/user|pengguna|akun/i.test(h)):-1;
   let t='<div class="tw"><table>';
-  if(head)t+='<thead><tr>'+keep.map(c=>`<th class="${c===0&&isNo(head[0])?'no':''}">${esc(head[c]||'')}</th>`).join('')+'</tr></thead>';
+  if(head)t+='<thead><tr>'+keep.map(c=>`<th class="${c===0&&isNo(head[0])?'no':''}">${esc(head[c]||'')}</th>`).join('')+(ed?'<th class="act">Aksi</th>':'')+'</tr></thead>';
   t+='<tbody>'+rs.map(r=>'<tr>'+keep.map(c=>{
     const v=r[c]||'',h=head&&head[c]||'',L=`data-l="${esc(h)}"`;
     if(c===0&&head&&isNo(head[0]))return`<td class="no" ${L}>${esc(v)}</td>`;
     if(isPW(h)&&v)return`<td ${L}><div class="pwc"><span class="v mono" data-v="${esc(v)}" data-m="${mask?1:0}">${mask?'••••••••':esc(v)}</span><button class="mini" data-a="eye" title="Tampilkan/sembunyikan">${mask?'👁':'🙈'}</button><button class="mini" data-a="copy" title="Salin sandi">📋</button>${uc>=0&&r[uc]?`<button class="mini" data-a="both" data-u="${esc(r[uc])}" title="Salin user dan sandi">👤</button>`:''}</div></td>`;
     const mono=/ip|alamat|url|link|halaman/i.test(h)||/^(https?:|\d{1,3}(\.\d{1,3}){3})/.test(v);
-    return`<td class="cp ${mono?'mono':''}" ${L} data-v="${esc(v)}">${cellHTML(v,h,q)}</td>`}).join('')+'</tr>').join('')+'</tbody></table></div>';
+    return`<td class="cp ${mono?'mono':''}" ${L} data-v="${esc(v)}">${cellHTML(v,h,q)}</td>`}).join('')
+    +(ed?`<td class="act" data-l="">${B('editRow',{...T,c:r},'✏️','mini').replace('<button','<button title="Ubah baris"')}${B('delRow',{...T,c:r},'🗑','mini').replace('<button','<button title="Hapus baris"')}</td>`:'')+'</tr>').join('')+'</tbody></table></div>';
+  if(ed)t+=`<div class="tact">${B('addRow',T,'＋ Tambah baris','btn addrow')}${B('delTbl',T,'🗑 Hapus tabel','btn addrow bad')}</div>`;
   body+=t});
- if(!body)return{html:'',n:0};
- return{n:rowsN,html:`<section class="sect ${collapsed.has(key)?'closed':''}" data-k="${esc(key)}"><h2><button class="sh" aria-expanded="true"><span class="t">${showSheet?`<span class="chip">${esc(sn)}</span> `:''}${hl(sec.title||sn,q)}</span>${rowsN?`<span class="n">${rowsN} entri</span>`:''}<span class="ch">▼</span></button></h2><div class="sb">${body}</div></section>`}}
+ if(!body&&!(ed&&!q))return{html:'',n:0};
+ const sbar=ed?`<div class="sact">${sec.tr?B('rename',{sec},'✏️ Ubah judul'):''}${B('addNote',{sec},'＋ Catatan')}${B('addTbl',{sec},'＋ Tabel')}${sec.tr?B('delSec',{sec},'🗑 Hapus bagian','btn bad'):''}</div>`:'';
+ return{n:rowsN,html:`<section class="sect ${collapsed.has(key)?'closed':''}" data-k="${esc(key)}"><h2><button class="sh" aria-expanded="true"><span class="t">${showSheet?`<span class="chip">${esc(sn)}</span> `:''}${hl(sec.title||sn,q)}</span>${rowsN?`<span class="n">${rowsN} entri</span>`:''}<span class="ch">▼</span></button></h2><div class="sb">${sbar}${body}</div></section>`}}
 
 function statsHTML(){
  const s=S.sheets.find(x=>x.name===cur)||{},nL=S.sheets.filter(x=>x.locked).length,tot=S.sheets.reduce((a,x)=>a+x.rows,0);
@@ -308,9 +338,10 @@ function ago(iso){const m=Math.round((Date.now()-new Date(iso))/6e4);if(m<1)retu
 
 function render(){
  if(!S)return;const q=$('q').value.trim().toLowerCase(),multi=allMode&&q,names=multi?S.sheets.map(x=>x.name):[cur];
- $('stats').innerHTML=statsHTML();let html='',n=0,secs=0;
- names.forEach(sn=>{if(!cache[sn])return;parse(cache[sn]).forEach(sec=>{const r=secHTML(sn,sec,q,multi);if(r.html){html+=r.html;n+=r.n;secs++}})});
- if(!(cache[cur]||[]).length&&!multi)html='<div class="empty">Sheet ini kosong.</div>';
+ $('stats').innerHTML=statsHTML();REG=[];let html='',n=0,secs=0;
+ names.forEach(sn=>{if(!cache[sn])return;parse(cache[sn],cacheN[sn]).forEach(sec=>{const r=secHTML(sn,sec,q,multi);if(r.html){html+=r.html;n+=r.n;secs++}})});
+ if(!(cache[cur]||[]).length&&!multi&&!editing)html='<div class="empty">Sheet ini kosong.</div>';
+ if(editing&&!multi){const sh=S.sheets.find(x=>x.name===cur)||{};html=(sh.locked?'<div class="warn">🔒 Sheet ini terkunci. Buka kuncinya lewat ⚙️ Kunci dan backup sebelum mengedit.</div>':'<div class="warn">✏️ Mode edit aktif. Setiap tambah, ubah, atau hapus meminta PIN lebih dulu.</div>')+html+`<button class="addsec" data-ed="addSec" data-i="${reg({})}">＋ Tambah bagian baru</button>`}
  $('out').innerHTML=html||'<div class="empty">Tidak ada hasil untuk “'+esc(q)+'”.</div>';
  $('hint').textContent=q?`${n} entri cocok di ${secs} bagian${multi?' (semua sheet)':''}.`:'Ketuk sel untuk menyalin. Sandi disembunyikan; ketuk 👁 untuk menampilkan. Sesi keluar otomatis setelah 10 menit tidak dipakai.';
  colLabel()}
@@ -319,6 +350,7 @@ function toggleAll(){const s=[...document.querySelectorAll('#out .sect')],close=
  s.forEach(x=>{x.classList.toggle('closed',close);close?collapsed.add(x.dataset.k):collapsed.delete(x.dataset.k)});colLabel()}
 
 $('out').addEventListener('click',e=>{
+ const ed=e.target.closest('[data-ed]');if(ed)return doEdit(ed.dataset.ed,REG[+ed.dataset.i]);
  const h=e.target.closest('.sh');if(h){const s=h.closest('.sect');s.classList.toggle('closed');s.classList.contains('closed')?collapsed.add(s.dataset.k):collapsed.delete(s.dataset.k);h.setAttribute('aria-expanded',!s.classList.contains('closed'));return colLabel()}
  const b=e.target.closest('.mini');
  if(b){const v=b.parentNode.querySelector('.v'),a=b.dataset.a;
@@ -346,12 +378,74 @@ function admHTML(){
   <div class="rowb"><label class="fld" style="flex:1">Jadwal<select id="aM"><option value="mati" ${m==='mati'?'selected':''}>Mati</option><option value="harian" ${m==='harian'?'selected':''}>Setiap hari</option><option value="mingguan" ${m==='mingguan'?'selected':''}>Setiap Senin</option></select></label>
   <label class="fld" style="flex:1">Jam<select id="aJ">${Array.from({length:24},(_,i)=>`<option value="${i}" ${+j===i?'selected':''}>${String(i).padStart(2,'0')}:00</option>`).join('')}</select></label></div>
   <div class="rowb"><button class="btn" onclick="act(this,'auto',{mode:$('aM').value,jam:$('aJ').value})">Simpan jadwal</button></div></div>
- <div class="grp"><h3>Backup terbaru</h3><div class="bl" id="bl"><p>Memuat…</p></div></div>`}
-async function openAdmin(){$('admBody').innerHTML=admHTML();dAdm.showModal();loadBl()}
+ <div class="grp"><h3>Backup terbaru</h3><div class="bl" id="bl"><p>Memuat…</p></div></div>
+ <div class="grp"><h3>Riwayat perubahan data</h3><p>Dicatat juga di sheet “Log Perubahan”. Isi sandi tidak ikut dicatat.</p><div class="logl" id="logl"><p>Memuat…</p></div></div>`}
+async function openAdmin(){$('admBody').innerHTML=admHTML();dAdm.showModal();loadBl();loadLog()}
 async function loadBl(){try{const l=await call('backups');$('bl').innerHTML=l.length?l.map(x=>`<a href="${esc(x.url)}" target="_blank" rel="noopener"><div>${esc(x.name.replace(/^Backup /,''))}</div><span>${ago(x.at)}</span></a>`).join(''):'<p>Belum ada backup.</p>'}catch(e){$('bl').innerHTML='<p>'+esc(e.message)+'</p>'}}
 async function act(b,a,p){if(b)b.disabled=true;
  try{S=await call(a,p||{});sheetsUI();$('admBody').innerHTML=admHTML();render();loadBl();toast('✅ Berhasil')}
  catch(e){toast('❌ '+e.message);if(b)b.disabled=false}}
+
+/* ---------- mode edit (setiap aksi meminta PIN lebih dulu) ---------- */
+const reg=o=>REG.push(o)-1;
+function emUI(){const b=$('em');b.classList.toggle('on',editing);b.textContent=editing?'✅ Selesai edit':'✏️ Mode edit'}
+function toggleEdit(){editing=!editing;emUI();render()}
+async function fetchSheet(n){const d=await call('data',{name:n});cache[n]=d.values;cacheN[n]=d.rowNums||[]}
+
+let pinRes=null,pEntry='',pLock=false;
+function pdraw(){$('pdots').innerHTML=Array.from({length:LEN},(_,i)=>`<div class="dot ${i<pEntry.length?'fill':''} ${i===pEntry.length?'cur':''}"></div>`).join('')}
+function askPin(desc){return new Promise(res=>{pinRes=res;pEntry='';pLock=false;$('pD').textContent=desc;$('pmsg').textContent='';pdraw();
+ $('ppad').innerHTML=['1','2','3','4','5','6','7','8','9','C','0','⌫'].map(x=>`<button data-k="${x}" class="${/\d/.test(x)?'':'fn'}">${x}</button>`).join('');$('dPin').showModal()})}
+$('ppad').addEventListener('click',e=>{const b=e.target.closest('button');if(b)pkey(b.dataset.k)});
+function pinCancel(){$('dPin').close()}
+$('dPin').addEventListener('close',()=>{if(pinRes){const r=pinRes;pinRes=null;r(null)}});
+async function pkey(k){if(pLock)return;
+ if(k==='C')pEntry='';else if(k==='⌫')pEntry=pEntry.slice(0,-1);else if(/^\d$/.test(k)&&pEntry.length<LEN)pEntry+=k;
+ $('pmsg').textContent='';pdraw();if(pEntry.length<LEN)return;
+ pLock=true;const bs=$('ppad').querySelectorAll('button');bs.forEach(b=>b.disabled=true);
+ try{await call('check',{_pin:pEntry});const r=pinRes,p=pEntry;pinRes=null;$('dPin').close();if(r)r(p)}
+ catch(e){$('pmsg').textContent=e.message;pEntry='';const d=$('pdots');d.classList.add('err');setTimeout(()=>{d.classList.remove('err');pdraw()},450)}
+ pLock=false;bs.forEach(b=>b.disabled=false)}
+
+function openEd(o){
+ $('edT').textContent=o.title;
+ $('edB').innerHTML=(o.msg?`<p class="hint" style="margin:0">${o.msg}</p>`:'')+(o.fields?'<div class="fgrid">'+o.fields.map((f,i)=>`<label class="fld ${f.wide?'wide':''}">${esc(f.label)}${f.ta?`<textarea id="ef${i}" rows="${f.ta}">${esc(f.val||'')}</textarea>`:`<input id="ef${i}" class="${f.mono?'mono':''}" value="${esc(f.val||'')}" autocomplete="off">`}${f.hint?`<small>${esc(f.hint)}</small>`:''}</label>`).join('')+'</div>':'');
+ const ok=$('edOk');ok.textContent=o.ok;ok.className='btn '+(o.bad?'bad arm':'pri');
+ ok.onclick=async()=>{ok.disabled=true;try{await o.save((o.fields||[]).map((f,i)=>$('ef'+i).value));$('dEdit').close()}catch(e){toast('❌ '+e.message)}ok.disabled=false};
+ $('dEdit').showModal();const f=$('ef0');if(f)f.focus()}
+async function commit(op,payload,pin){
+ const r=await call('edit',{op,json:JSON.stringify({sheet:cur,...payload}),_pin:pin});
+ S=r.init;sheetsUI();toast('✅ '+r.msg);await load(cur,true)}
+
+const EDL={editRow:'mengubah baris ini',delRow:'menghapus baris ini',addRow:'menambah baris baru',rename:'mengubah judul bagian',delSec:'menghapus bagian beserta isinya',addNote:'menambah catatan',editNote:'mengubah catatan',delNote:'menghapus catatan',addTbl:'menambah tabel',delTbl:'menghapus tabel',addSec:'menambah bagian baru'};
+async function doEdit(a,x){
+ const sh=S.sheets.find(s=>s.name===cur)||{};
+ if(sh.locked)return toast('🔒 Sheet terkunci. Buka kuncinya dulu lewat ⚙️ Kunci dan backup');
+ const pin=await askPin('Masukkan PIN untuk '+EDL[a]);if(!pin)return;
+ EDF[a](x,pin)}
+const lbl=(x,c)=>(x.head&&x.head[c])||'Kolom '+(c+1);
+const rowFields=(x,vals)=>x.keep.map(c=>({label:lbl(x,c),val:vals[c]||'',mono:/ip|pass|sandi|pin|url|link|user/i.test(lbl(x,c)),wide:/ket|note|catatan|alamat|link|url|halaman/i.test(lbl(x,c))}));
+const merge=(x,base,v)=>{const o=Array.from({length:x.w},(_,i)=>base[i]||'');x.keep.forEach((c,j)=>o[c]=v[j].trim());return o};
+const padExp=(c,t)=>Array(c).fill('').concat([t]);
+const splitCols=s=>s.split(',').map(z=>z.trim()).filter(Boolean);
+const EDF={
+ editRow(x,pin){openEd({title:'Ubah baris',fields:rowFields(x,x.c),ok:'Simpan perubahan',save:v=>commit('updateRow',{row:x.c.r,values:merge(x,x.c,v),expect:x.c},pin)})},
+ addRow(x,pin){const pre=[];if(x.head&&isNo(x.head[0])){const n=x.rows.map(r=>parseInt(r[0])).filter(Number.isFinite);pre[0]=String((n.length?Math.max(...n):0)+1)}
+  openEd({title:'Tambah baris',fields:rowFields(x,pre),ok:'Tambah baris',msg:'Baris baru ditambahkan di bawah baris terakhir tabel ini.',save:v=>commit('addRow',{after:x.after,values:merge(x,[],v)},pin)})},
+ delRow(x,pin){const s=x.keep.filter(c=>!isPW(lbl(x,c))&&x.c[c]).slice(0,3).map(c=>x.c[c]).join(' · ');
+  openEd({title:'Hapus baris?',msg:'Baris ini akan dihapus dari spreadsheet: <b>'+esc(s||'(kosong)')+'</b>. Nomor urut tabel dirapikan otomatis.',ok:'Ya, hapus baris',bad:true,save:()=>commit('deleteRows',{row:x.c.r,count:1,kind:'row',expect:x.c},pin)})},
+ rename(x,pin){openEd({title:'Ubah judul bagian',fields:[{label:'Judul bagian',val:x.sec.title,wide:1}],ok:'Simpan judul',save:v=>commit('setText',{row:x.sec.tr,col:x.sec.tc+1,text:v[0],expect:x.sec.title,what:'title'},pin)})},
+ addNote(x,pin){openEd({title:'Tambah catatan',fields:[{label:'Isi catatan',val:'Note : ',ta:3,wide:1}],ok:'Tambah catatan',save:v=>{let t=v[0].trim();if(!t.replace(/^note\s*:?\s*/i,''))throw new Error('Isi catatan masih kosong');if(!/^note\b/i.test(t))t='Note : '+t;return commit('addNote',{after:x.sec.last,text:t},pin)}})},
+ editNote(x,pin){const n=x.n;openEd({title:'Ubah catatan',fields:[{label:'Isi catatan',val:n.raw,ta:3,wide:1}],ok:'Simpan catatan',save:v=>commit('setText',{row:n.r,col:n.c+1,text:v[0],expect:n.raw,what:'note'},pin)})},
+ delNote(x,pin){const n=x.n;openEd({title:'Hapus catatan?',msg:'Catatan ini akan dihapus: <b>'+esc(n.raw.slice(0,120))+'</b>',ok:'Ya, hapus catatan',bad:true,save:()=>commit('deleteRows',{row:n.r,count:1,kind:'note',expect:padExp(n.c,n.raw)},pin)})},
+ addTbl(x,pin){openEd({title:'Tambah tabel',fields:[{label:'Nama kolom, pisahkan dengan koma',val:'No, Nama, Keterangan',wide:1,hint:'Kolom pertama harus “No”; ditambahkan otomatis jika belum ada. Isi barisnya sesudah tabel dibuat.'}],ok:'Buat tabel',save:v=>commit('addTable',{after:x.sec.last,cols:splitCols(v[0])},pin)})},
+ delTbl(x,pin){const first=x.hr||(x.rows[0]&&x.rows[0].r),last=x.rows.length?x.rows[x.rows.length-1].r:x.hr;
+  openEd({title:'Hapus tabel?',msg:'Seluruh tabel ini ('+x.rows.length+' baris data) akan dihapus. Backup otomatis dibuat lebih dulu.',ok:'Ya, hapus tabel',bad:true,save:()=>commit('deleteRows',{row:first,count:last-first+1,kind:'table',expect:x.head||x.rows[0]},pin)})},
+ delSec(x,pin){const s=x.sec,ent=s.items.reduce((a,i)=>a+(i.tbl?i.tbl.rows.length:0),0);
+  openEd({title:'Hapus bagian?',msg:'Bagian <b>'+esc(s.title)+'</b> beserta '+ent+' baris data dan catatannya akan dihapus. Backup otomatis dibuat lebih dulu.',ok:'Ya, hapus bagian',bad:true,save:()=>commit('deleteRows',{row:s.tr,count:s.last-s.tr+1,kind:'section',expect:padExp(s.tc,s.title)},pin)})},
+ addSec(x,pin){openEd({title:'Tambah bagian baru',fields:[{label:'Judul bagian',val:'',wide:1},{label:'Nama kolom tabel (boleh dikosongkan)',val:'No, Nama, Keterangan',wide:1,hint:'Bagian baru ditambahkan di akhir sheet, dengan gaya yang sama seperti bagian lain.'}],ok:'Tambah bagian',save:v=>commit('addSection',{title:v[0],cols:splitCols(v[1])},pin)})}};
+
+async function loadLog(){try{const l=await call('log');$('logl').innerHTML=l.length?l.map(x=>`<div><b>${esc(x.aksi)}</b> · ${esc(x.sheet)}${x.baris?' (baris '+esc(x.baris)+')':''}<br><span>${esc(x.t)} — ${esc(x.ket)}</span></div>`).join(''):'<p>Belum ada perubahan data.</p>'}catch(e){$('logl').innerHTML='<p>'+esc(e.message)+'</p>'}}
 
 boot();
 </script></body></html>
