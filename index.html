@@ -251,7 +251,7 @@ th.act,td.act{width:1%;white-space:nowrap;text-align:right}td.act .mini{margin-l
 
 <script>
 /* ★★★ TEMPEL DISINI ★★★ URL Web App (berakhiran /exec). Tidak perlu diisi jika dibuka dari link Apps Script. */
-const SCRIPT_URL='https://script.google.com/macros/s/AKfycbzQ7wlI9SSOAaonJ-1yKBpDqoem1tK1QI0Al8M2KPfUu7zAa31u8hYNUy8aOf8KuWPDwQ/exec';
+const SCRIPT_URL='https://script.google.com/macros/s/AKfycbxeh94pLS-u_zh306REAxyGXhZiynPHnILj_RWTThL90HTh1nYF3-pqvNhal3Co0MXJAg/exec';
 
 const IN_GAS=typeof google!=='undefined'&&google.script&&google.script.run;
 const HID='[[HIDDEN]]';   /* pengganti sandi yang tidak boleh dilihat pengguna ini (disamakan dengan Code.gs) */
@@ -269,7 +269,8 @@ const canDel=()=>isAdm()||!!ME().del;
 function setLens(r){LENS=((r&&r.lens)||[]).map(Number).filter(Boolean).sort((a,b)=>a-b);LEN=LENS.length?LENS[LENS.length-1]:0;AUTO=LENS.length<=1}
 
 function toast(m){const t=$('toast');t.textContent=m;t.className='s';clearTimeout(toast.t);toast.t=setTimeout(()=>t.className='',2600)}
-function busy(on){let b=$('busy');if(on&&!b){b=document.createElement('div');b.id='busy';document.body.appendChild(b)}else if(!on&&b)b.remove()}
+let busyN=0;
+function busy(on){busyN=Math.max(0,busyN+(on?1:-1));let b=$('busy');if(busyN>0&&!b){b=document.createElement('div');b.id='busy';document.body.appendChild(b)}else if(busyN===0&&b)b.remove()}
 
 /* ---------- tema ---------- */
 const effTheme=()=>document.documentElement.dataset.theme||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
@@ -297,7 +298,9 @@ async function call(action,p0={}){
   }else{
    if(!/^https:\/\/script\.google\.com\//.test(SCRIPT_URL))throw new Error('URL Web App belum diisi (SCRIPT_URL)');
    const q=new URLSearchParams({action,...p});if(action!=='pinlen')q.set('key',K);
-   j=await(await fetch(SCRIPT_URL+'?'+q)).json();
+   /* permintaan panjang dikirim POST (text/plain = tanpa preflight CORS) agar tidak terpotong batas panjang URL */
+   if(q.toString().length>1800)j=await(await fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,...p,...(action!=='pinlen'?{key:K}:{})})})).json();
+   else j=await(await fetch(SCRIPT_URL+'?'+q)).json();
   }
   if(!j.ok){const e=new Error(j.error);e.auth=!!j.auth;throw e}
   return j.data;
@@ -326,7 +329,7 @@ async function submit(){
  if(entry.length<LENS[0])return lmsg('PIN belum lengkap');
  locked=true;PIN=entry;$('pad').querySelectorAll('button').forEach(b=>b.disabled=true);$('lgo').disabled=true;
  try{await call('check');try{sessionStorage.setItem('ksu_pin',PIN)}catch(e){}await enter()}
- catch(err){PIN='';entry='';lmsg(err.message);const d=$('dots');d.classList.add('err');setTimeout(()=>{d.classList.remove('err');drawDots()},450)}
+ catch(err){PIN='';entry='';try{sessionStorage.removeItem('ksu_pin')}catch(e){}lmsg(err.message);const d=$('dots');d.classList.add('err');setTimeout(()=>{d.classList.remove('err');drawDots()},450)}
  locked=false;$('pad').querySelectorAll('button').forEach(b=>b.disabled=false);$('lgo').disabled=false}
 async function boot(){
  themeUI();try{const b=JSON.parse(st.get('ksu_brand')||'null');if(b)brand(b)}catch(e){}
@@ -354,7 +357,9 @@ async function refresh(){
 function logout(){
  try{sessionStorage.removeItem('ksu_pin')}catch(e){}
  PIN='';entry='';cache={};cacheN={};editing=false;emUI();S=null;cur=null;clearTimeout(idle);document.querySelectorAll('dialog[open]').forEach(d=>d.close());
- $('app').classList.add('hide');$('out').innerHTML='';$('q').value='';$('login').classList.remove('hide');lmsg('');drawDots()}
+ $('app').classList.add('hide');$('out').innerHTML='';$('q').value='';$('login').classList.remove('hide');lmsg('');drawDots();
+ /* ambil ulang panjang PIN yang berlaku (admin mungkin baru menambah pengguna dengan PIN berbeda panjang) */
+ boot()}
 function resetIdle(){clearTimeout(idle);idle=setTimeout(()=>{logout();lmsg('Sesi berakhir karena tidak dipakai',true)},10*60*1000)}
 ['click','keydown','touchstart','scroll'].forEach(ev=>document.addEventListener(ev,()=>{if(S)resetIdle()},{passive:true}));
 
@@ -362,8 +367,8 @@ function sheetsUI(){$('sheets').innerHTML=S.sheets.map((x,i)=>`<button class="sh
 $('sheets').addEventListener('click',e=>{const b=e.target.closest('.sh1');if(b){$('q').value='';$('all').checked=false;allMode=false;load(S.sheets[+b.dataset.i].name)}});
 async function load(n,force){
  cur=n;sheetsUI();$('out').innerHTML='<div class="empty">Memuat…</div>';
- try{if(force||!cache[n])await fetchSheet(n);const p=parse(cache[n],cacheN[n]);curStat={sec:p.length,ent:p.reduce((a,s)=>a+s.items.reduce((b,i)=>b+(i.tbl?i.tbl.rows.length:0),0),0)};render()}
- catch(err){if(S)$('out').innerHTML='<div class="empty">'+esc(err.message)+'</div>'}}
+ try{if(force||!cache[n])await fetchSheet(n);if(cur!==n)return;const p=parse(cache[n],cacheN[n]);curStat={sec:p.length,ent:p.reduce((a,s)=>a+s.items.reduce((b,i)=>b+(i.tbl?i.tbl.rows.length:0),0),0)};render()}
+ catch(err){if(S&&cur===n)$('out').innerHTML='<div class="empty">'+esc(err.message)+'</div>'}}
 async function onSearch(){
  if(!S||!cur)return;
  allMode=$('all').checked;const q=$('q').value.trim();
@@ -414,7 +419,7 @@ function secHTML(sn,sec,q,showSheet){
   body+=t});
  if(!body&&!(ed&&!q))return{html:'',n:0};
  const sbar=ed?`<div class="sact">${sec.tr?B('rename',{sec},'✏️ Ubah judul'):''}${B('addNote',{sec},'＋ Catatan')}${B('addTbl',{sec},'＋ Tabel')}${sec.tr&&dl?B('delSec',{sec},'🗑 Hapus bagian','btn bad'):''}</div>`:'';
- return{n:rowsN,html:`<section class="sect ${collapsed.has(key)?'closed':''}" data-k="${esc(key)}"><h2><button class="sh" aria-expanded="true"><span class="t">${showSheet?`<span class="chip">${esc(sn)}</span> `:''}${hl(sec.title||sn,q)}</span>${rowsN?`<span class="n">${rowsN} entri</span>`:''}<span class="ch">▼</span></button></h2><div class="sb">${sbar}${body}</div></section>`}}
+ return{n:rowsN,html:`<section class="sect ${collapsed.has(key)?'closed':''}" data-k="${esc(key)}"><h2><button class="sh" aria-expanded="${collapsed.has(key)?'false':'true'}"><span class="t">${showSheet?`<span class="chip">${esc(sn)}</span> `:''}${hl(sec.title||sn,q)}</span>${rowsN?`<span class="n">${rowsN} entri</span>`:''}<span class="ch">▼</span></button></h2><div class="sb">${sbar}${body}</div></section>`}}
 
 function statsHTML(){
  const s=S.sheets.find(x=>x.name===cur)||{},nL=S.sheets.filter(x=>x.locked).length,tot=S.sheets.reduce((a,x)=>a+x.rows,0);
@@ -506,6 +511,8 @@ async function saveOrder(){$('ordOk').disabled=true;
 
 /* ---------- pengguna & hak akses (admin) ---------- */
 let USERS=[],UFORM=null;
+/* panjang PIN yang berlaku bisa berubah setelah pengguna ditambah/diubah/dihapus */
+async function refreshLens(){try{setLens(await call('pinlen'))}catch(e){}}
 const lvOf=(p,id)=>{const k=p.sh&&Object.prototype.hasOwnProperty.call(p.sh,id)?p.sh[id]:p.def;return k==='edit'||k==='view'?k:'none'};
 function permSum(p){
  const L=S.sheets.map(s=>lvOf(p,s.id)),e=L.filter(x=>x==='edit').length,v=L.filter(x=>x==='view').length,a=[];
@@ -523,10 +530,10 @@ $('uBody').addEventListener('click',async e=>{
  if(a==='new')return openUserForm(null);if(!u)return;
  if(a==='edit')return openUserForm(u);
  if(a==='tog'){const pn=await askPin('Masukkan PIN untuk '+(u.on?'menonaktifkan':'mengaktifkan')+' pengguna “'+u.name+'”');if(!pn)return;
-  try{USERS=await call('userSave',{json:JSON.stringify({id:u.id,name:u.name,on:!u.on,perm:u.perm}),_pin:pn});usersUI();toast(u.on?'⏸ Pengguna dinonaktifkan':'▶️ Pengguna diaktifkan')}catch(x){toast('❌ '+x.message)}return}
+  try{USERS=await call('userSave',{json:JSON.stringify({id:u.id,name:u.name,on:!u.on,perm:u.perm}),_pin:pn});usersUI();refreshLens();toast(u.on?'⏸ Pengguna dinonaktifkan':'▶️ Pengguna diaktifkan')}catch(x){toast('❌ '+x.message)}return}
  if(a==='del'){const pn=await askPin('Masukkan PIN untuk menghapus pengguna “'+u.name+'”');if(!pn)return;
   openEd({title:'Hapus pengguna?',msg:'Pengguna <b>'+esc(u.name)+'</b> dihapus permanen dan PIN-nya tidak bisa dipakai lagi.',ok:'Ya, hapus pengguna',bad:true,
-   save:async()=>{USERS=await call('userDel',{id:u.id,_pin:pn});usersUI();toast('🗑 Pengguna dihapus')}})}});
+   save:async()=>{USERS=await call('userDel',{id:u.id,_pin:pn});usersUI();refreshLens();toast('🗑 Pengguna dihapus')}})}});
 
 function openUserForm(u){
  const p=u?u.perm:{def:'none',sh:{},pw:false,del:false};UFORM=u?u.id:null;
@@ -558,7 +565,7 @@ async function saveUser(){
  const u={id:UFORM||undefined,name,pin:pin||undefined,on:$('uOn').checked,perm:{def:$('uDef').value,sh,pw:$('uPw').checked,del:$('uDel').checked}};
  const pn=await askPin('Masukkan PIN admin untuk menyimpan pengguna “'+name+'”');if(!pn)return;
  $('ufOk').disabled=true;
- try{USERS=await call('userSave',{json:JSON.stringify(u),_pin:pn});dUser.close();usersUI();toast('✅ Pengguna disimpan')}
+ try{USERS=await call('userSave',{json:JSON.stringify(u),_pin:pn});dUser.close();usersUI();refreshLens();toast('✅ Pengguna disimpan')}
  catch(e){toast('❌ '+e.message)}$('ufOk').disabled=false}
 
 /* ---------- mode edit (setiap aksi meminta PIN lebih dulu) ---------- */
