@@ -178,6 +178,70 @@ th.act,td.act{width:1%;white-space:nowrap;text-align:right}td.act .mini{margin-l
  td.no{width:auto;text-align:left;font-size:.78rem}td.no::before{content:"No"}
  .bar .chk{flex:1 1 40%}
 }
+/* ===== PERBAIKAN TAMPILAN HP (v2) ===== */
+.bt .me{display:inline-block;margin-top:10px}
+.sl{display:none}
+@media(max-width:900px){
+ /* header ringkas: baris 1 = nama aplikasi, baris 2 = tab sheet. Tombol alat pindah ke bilah bawah */
+ .side{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:10px 14px 8px}
+ .brand{gap:10px;align-items:center}
+ .brand .logo{width:38px;height:38px;border-radius:11px;font-size:1.05rem}
+ .brand b{font-size:1rem;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .brand .ed{width:36px;height:36px;border-radius:10px;font-size:.9rem;align-self:center}
+ .bt .me{display:block;margin:1px 0 0;padding:0;border:0;background:none;border-radius:0;font-size:.74rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .side nav{min-width:0;width:auto}
+ #sheets{position:relative;gap:6px;margin:0 -14px;padding:0 14px 2px;scrollbar-width:none;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scroll-padding:0 14px}
+ #sheets::-webkit-scrollbar{display:none}
+ .sh1{height:36px;padding:0 15px;scroll-snap-align:start;white-space:nowrap;font-size:.86rem}
+ .sh1.on{border-color:var(--pri)}
+ /* bilah navigasi bawah (mudah dijangkau jempol) */
+ .sbtn{position:fixed;left:0;right:0;bottom:0;z-index:30;margin:0;flex-direction:row;gap:0;justify-content:space-around;padding:4px 6px calc(4px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--bd);box-shadow:0 -6px 20px rgba(15,30,50,.08)}
+ .sbtn .btn{flex:1 1 0;min-width:0;width:auto;height:auto;min-height:50px;padding:5px 2px;flex-direction:column;gap:1px;border:0;background:none;border-radius:12px;font-size:1.25rem;line-height:1.2}
+ .sbtn .btn:active{background:var(--hd)}
+ .sl{display:block;font-size:.66rem;font-weight:500;color:var(--mut);white-space:nowrap}
+ .content{padding:12px 14px calc(92px + env(safe-area-inset-bottom))}
+ #toast{bottom:calc(84px + env(safe-area-inset-bottom))}
+}
+@media(max-width:700px){
+ /* bilah kontrol: cari + muat ulang satu baris, tombol lain rapi 2 kolom */
+ .bar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+ .bar input[type=search]{grid-column:span 3;order:1;flex:none;height:44px;font-size:16px;border-radius:12px}
+ .bar .rf{order:2;height:44px;width:100%;padding:0;border-radius:12px;font-size:1rem}
+ .bar .chk,.bar #mk,.bar #em,.bar #col{grid-column:span 2}
+ .bar .chk{order:3}.bar #mk{order:4}.bar #em{order:5}.bar #col{order:6}
+ .bar:has(#em.hide) #col{grid-column:span 4}
+ .bar .btn,.bar .chk{height:40px;min-width:0;padding:0 8px;font-size:.8rem;border-radius:10px;justify-content:center;gap:6px;white-space:nowrap}
+ .bar .chk{border:1px solid var(--bd);background:var(--hd);color:var(--tx);font-weight:500}
+ .bar .chk input{width:16px;height:16px;margin:0}
+ /* statistik: satu baris yang bisa digeser, hemat tempat */
+ .stats{display:flex;gap:8px;overflow-x:auto;margin:12px -14px 0;padding:2px 14px 6px;scroll-snap-type:x proximity;scrollbar-width:none}
+ .stats::-webkit-scrollbar{display:none}
+ .st{flex:0 0 auto;min-width:148px;max-width:240px;padding:10px 12px;border-radius:12px;scroll-snap-align:start}
+ .st small{font-size:.7rem}
+ .st b{font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .st span{font-size:.72rem;white-space:nowrap}
+ .hint{font-size:.74rem;margin:4px 2px 0;line-height:1.4}
+ #out{margin-top:10px!important}
+ /* kartu data */
+ .sect{border-radius:14px;margin-bottom:12px}
+ .sh{padding:12px 14px;font-size:.95rem}
+ .tw{padding:8px 10px 10px}
+ tr{padding:2px 12px;margin-bottom:8px;background:var(--card)}
+ td{grid-template-columns:92px minmax(0,1fr);gap:8px;padding:8px 0;font-size:.88rem;align-items:start}
+ td::before{font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;padding-top:2px}
+ td.no{align-items:center}
+ .pwc{align-items:center}.pwc .v{min-width:0;overflow-wrap:anywhere}
+ .mini{width:34px;height:34px}
+ /* dialog menjadi lembar dari bawah */
+ dialog{width:100%;max-width:100%;margin:auto 0 0;border-radius:20px 20px 0 0;border-bottom:0;max-height:92dvh;animation:sheetup .22s ease}
+ @keyframes sheetup{from{transform:translateY(40px);opacity:0}}
+ .dh{padding:14px 16px}
+ .db{padding:14px 16px;max-height:calc(92dvh - 128px)}
+ .df{padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+ .df .btn{flex:1;height:44px}
+ .fld input,.fld select,.fld textarea,.prow select{font-size:16px}
+}
+@media(prefers-reduced-motion:reduce){dialog{animation:none!important}}
 </style></head><body>
 
 <section id="login">
@@ -194,16 +258,15 @@ th.act,td.act{width:1%;white-space:nowrap;text-align:right}td.act .mini{margin-l
 <div id="app" class="hide">
  <aside class="side">
   <div class="brand"><div class="logo">🗂️</div>
-   <div class="bt"><b class="bn">Data IT KSU</b><small class="bs"></small></div>
+   <div class="bt"><b class="bn">Data IT KSU</b><small class="bs"></small><div class="me" id="me"></div></div>
    <button class="ed adm" onclick="openName()" title="Ubah nama aplikasi" aria-label="Ubah nama aplikasi">✏️</button></div>
-  <div class="me" id="me"></div>
   <nav><p class="cap">SHEET</p><div id="sheets"></div></nav>
   <div class="sbtn">
-   <button class="btn thm" onclick="toggleTheme()" title="Ganti tema terang/gelap">🌓<span class="lbl" id="thl">Tema</span></button>
-   <button class="btn adm" onclick="openOrder()" title="Urutkan sheet">↕️<span class="lbl">Urutkan sheet</span></button>
-   <button class="btn adm" onclick="openUsers()" title="Pengguna dan hak akses">👥<span class="lbl">Pengguna &amp; akses</span></button>
-   <button class="btn adm" onclick="openAdmin()" title="Kunci dan backup">⚙️<span class="lbl">Kunci dan backup</span></button>
-   <button class="btn" onclick="logout()" title="Keluar">🚪<span class="lbl">Keluar</span></button>
+   <button class="btn thm" onclick="toggleTheme()" title="Ganti tema terang/gelap">🌓<span class="lbl" id="thl">Tema</span><span class="sl">Tema</span></button>
+   <button class="btn adm" onclick="openOrder()" title="Urutkan sheet">↕️<span class="lbl">Urutkan sheet</span><span class="sl">Urutkan</span></button>
+   <button class="btn adm" onclick="openUsers()" title="Pengguna dan hak akses">👥<span class="lbl">Pengguna &amp; akses</span><span class="sl">Pengguna</span></button>
+   <button class="btn adm" onclick="openAdmin()" title="Kunci dan backup">⚙️<span class="lbl">Kunci dan backup</span><span class="sl">Kunci</span></button>
+   <button class="btn" onclick="logout()" title="Keluar">🚪<span class="lbl">Keluar</span><span class="sl">Keluar</span></button>
   </div>
  </aside>
  <div class="content">
@@ -213,7 +276,7 @@ th.act,td.act{width:1%;white-space:nowrap;text-align:right}td.act .mini{margin-l
    <button class="btn" id="mk" onclick="toggleMask()">🙈 Sandi tersembunyi</button>
    <button class="btn hide" id="em" onclick="toggleEdit()">✏️ Mode edit</button>
    <button class="btn" id="col" onclick="toggleAll()">⇕ Ciutkan</button>
-   <button class="btn" onclick="refresh()" title="Muat ulang">🔄</button>
+   <button class="btn rf" onclick="refresh()" title="Muat ulang" aria-label="Muat ulang">🔄</button>
   </div>
   <div class="stats" id="stats"></div>
   <p class="hint" id="hint"></p>
@@ -251,7 +314,7 @@ th.act,td.act{width:1%;white-space:nowrap;text-align:right}td.act .mini{margin-l
 
 <script>
 /* ★★★ TEMPEL DISINI ★★★ URL Web App (berakhiran /exec). Tidak perlu diisi jika dibuka dari link Apps Script. */
-const SCRIPT_URL='https://script.google.com/macros/s/AKfycbxeh94pLS-u_zh306REAxyGXhZiynPHnILj_RWTThL90HTh1nYF3-pqvNhal3Co0MXJAg/exec';
+const SCRIPT_URL='https://script.google.com/macros/s/AKfycbyqnGTRZ-JyzqhPhzIu1cwsKjFnkztxgRRDqmHAiPwHd4TMKEjzW11wKZ7_hxm6YJ1o3g/exec';
 
 const IN_GAS=typeof google!=='undefined'&&google.script&&google.script.run;
 const HID='[[HIDDEN]]';   /* pengganti sandi yang tidak boleh dilihat pengguna ini (disamakan dengan Code.gs) */
@@ -342,7 +405,7 @@ async function boot(){
  }catch(err){$('lsub').textContent='Tidak dapat terhubung';lmsg(err.message)}}
 
 /* ---------- aplikasi ---------- */
-function meUI(){$('me').textContent='👤 '+ME().name+' · '+(isAdm()?'Admin':'Pengguna');$('app').classList.toggle('noadm',!isAdm())}
+function meUI(){{const r=isAdm()?'Admin':'Pengguna';$('me').textContent='👤 '+(ME().name===r?r:ME().name+' · '+r)}$('app').classList.toggle('noadm',!isAdm())}
 function noAccess(){cur=null;sheetsUI();$('stats').innerHTML='';$('hint').textContent='';$('out').innerHTML='<div class="empty">Akun Anda belum punya akses ke sheet mana pun.<br>Hubungi admin untuk diberi akses.</div>';emUI()}
 async function enter(){
  S=await call('init');brand(S.app);
@@ -363,7 +426,7 @@ function logout(){
 function resetIdle(){clearTimeout(idle);idle=setTimeout(()=>{logout();lmsg('Sesi berakhir karena tidak dipakai',true)},10*60*1000)}
 ['click','keydown','touchstart','scroll'].forEach(ev=>document.addEventListener(ev,()=>{if(S)resetIdle()},{passive:true}));
 
-function sheetsUI(){$('sheets').innerHTML=S.sheets.map((x,i)=>`<button class="sh1 ${x.name===cur?'on':''}" data-i="${i}"><span>${esc(x.name)}</span><em>${x.locked?'🔒 ':''}${!isAdm()&&x.level==='view'?'👁 ':''}${x.rows} baris</em></button>`).join('')}
+function sheetsUI(){$('sheets').innerHTML=S.sheets.map((x,i)=>`<button class="sh1 ${x.name===cur?'on':''}" data-i="${i}"><span>${esc(x.name)}</span><em>${x.locked?'🔒 ':''}${!isAdm()&&x.level==='view'?'👁 ':''}${x.rows} baris</em></button>`).join('');const on=$('sheets').querySelector('.on');if(on)try{on.scrollIntoView({inline:'center',block:'nearest'})}catch(e){}}
 $('sheets').addEventListener('click',e=>{const b=e.target.closest('.sh1');if(b){$('q').value='';$('all').checked=false;allMode=false;load(S.sheets[+b.dataset.i].name)}});
 async function load(n,force){
  cur=n;sheetsUI();$('out').innerHTML='<div class="empty">Memuat…</div>';
