@@ -32,13 +32,26 @@ button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer;bo
 .noadm .adm{display:none!important}
 
 /* ===== LOGIN ===== */
-#login{min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:20px;position:relative;background:radial-gradient(900px 500px at 50% -10%,var(--pri-s),transparent),var(--bg)}
-#login .thm{position:absolute;top:calc(14px + env(safe-area-inset-top));right:14px;width:40px;padding:0}
-.lbox{width:100%;max-width:390px;background:var(--card);border:1px solid var(--bd);border-radius:22px;padding:32px 24px 24px;box-shadow:0 10px 40px rgba(15,23,42,.12);text-align:center}
-.lbox .logo{width:56px;height:56px;margin:0 auto 14px;border-radius:16px}.lbox .logo .ic{width:28px;height:28px}
-.lbox h1{margin:0;font-size:1.35rem;font-weight:600;overflow-wrap:anywhere}
-.lbox .bs{margin:4px 0 0;color:var(--mut);font-size:.88rem}
-#lsub{margin:20px 0 14px;font-size:.92rem;color:var(--mut)}
+#login{min-height:100vh;min-height:100dvh;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);background:var(--bg)}
+.lbrand{position:relative;overflow:hidden;color:#fff;padding:44px 56px;display:flex;flex-direction:column;justify-content:space-between;gap:32px;background:radial-gradient(700px 460px at -5% -10%,rgba(45,212,191,.22),transparent 60%),radial-gradient(600px 460px at 105% 105%,rgba(59,130,246,.26),transparent 60%),linear-gradient(165deg,#12305a 0%,#0f2540 45%,#0a1b30 100%)}
+.lbrand::after{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);background-size:44px 44px;-webkit-mask-image:radial-gradient(ellipse at 30% 40%,#000 15%,transparent 75%);mask-image:radial-gradient(ellipse at 30% 40%,#000 15%,transparent 75%)}
+.lbrand>*{position:relative;z-index:1}
+.lb-id{display:flex;align-items:center;gap:14px}
+.lb-id .logo{width:48px;height:48px;border-radius:13px}
+.lb-id b{display:block;font-size:1.1rem;font-weight:600;line-height:1.25;overflow-wrap:anywhere}
+.lb-id small{display:block;color:#9fb1c6;font-size:.82rem;margin-top:1px}
+.lb-hero h2{margin:0 0 12px;font-size:2.1rem;line-height:1.2;font-weight:600;letter-spacing:-.01em;max-width:460px}
+.lb-hero>p{margin:0 0 30px;color:#a9bbd0;max-width:440px;font-size:1rem}
+.lb-feat{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:16px}
+.lb-feat li{display:flex;gap:14px;align-items:flex-start;color:#a9bbd0;font-size:.9rem;line-height:1.4}
+.lb-feat .fi{width:38px;height:38px;flex:none;border-radius:11px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);display:grid;place-items:center;color:#5eead4}
+.lb-feat b{display:block;color:#fff;font-weight:600;font-size:.95rem}
+.lb-foot{font-size:.78rem;color:#7f93ab}
+.lform{display:flex;align-items:center;justify-content:center;padding:32px 24px}
+.lbox{width:100%;max-width:400px;background:var(--card);border:1px solid var(--bd);border-radius:22px;padding:34px 28px 20px;box-shadow:0 12px 40px rgba(15,37,64,.10);text-align:center}
+.lkey{width:52px;height:52px;margin:0 auto 14px;border-radius:15px;background:var(--pri-s);color:var(--pri);display:grid;place-items:center}.lkey .ic{width:26px;height:26px}
+.lbox h1{margin:0;font-size:1.4rem;font-weight:600}
+#lsub{margin:6px 0 20px;font-size:.92rem;color:var(--mut)}
 .dots{display:flex;gap:8px;justify-content:center;margin-bottom:10px}
 .dot{height:50px;max-width:44px;flex:1 1 0;min-width:0;border:1.5px solid var(--bd);border-radius:12px;background:var(--hd);display:grid;place-items:center}
 .dot.cur{border-color:var(--pri)}.dot.fill{border-color:var(--pri);background:var(--card)}
@@ -51,6 +64,17 @@ button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer;bo
 .pad button{height:54px;border-radius:14px;background:var(--hd);border:1px solid var(--bd);font-size:1.25rem;font-weight:500}
 .pad button:hover{border-color:var(--pri)}.pad button:active{background:var(--bd)}.pad .fn{font-size:.85rem;color:var(--mut)}.pad button:disabled{opacity:.45}
 .lgo{width:100%;margin-top:12px;height:48px;font-size:.98rem}
+.lfoot{margin-top:18px;padding-top:12px;border-top:1px solid var(--bd2);display:flex;justify-content:center}
+.tbtn{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 14px;border-radius:10px;color:var(--mut);font-size:.82rem;font-weight:500}
+.tbtn:hover{background:var(--hd);color:var(--tx)}.tbtn .ic{width:16px;height:16px}
+@media(max-width:900px){
+ #login{display:flex;flex-direction:column}
+ .lbrand{padding:calc(26px + env(safe-area-inset-top)) 24px 54px;gap:0}
+ .lb-hero,.lb-foot{display:none}
+ .lform{flex:1;align-items:flex-start;margin-top:-28px;position:relative;z-index:1;background:var(--card);border-radius:26px 26px 0 0;padding:26px 20px calc(18px + env(safe-area-inset-bottom))}
+ .lbox{border:0;box-shadow:none;background:transparent;padding:0;max-width:420px}
+}
+@media(max-height:720px){.pad button{height:46px}.dot{height:44px}.lkey{display:none}#lsub{margin-bottom:14px}}
 
 /* ===== APLIKASI: laptop = sidebar kiri ===== */
 #app{display:grid;grid-template-columns:268px minmax(0,1fr);min-height:100vh;min-height:100dvh}
@@ -303,14 +327,28 @@ dialog::backdrop{background:rgba(5,10,18,.55)}
 </defs></svg>
 
 <section id="login">
- <button class="btn thm" onclick="toggleTheme()" title="Ganti tema" aria-label="Ganti tema"><span class="tic"></span></button>
- <div class="lbox">
-  <div class="logo"><svg class="ic"><use href="#i-lock"/></svg></div>
-  <h1 class="bn">Data IT KSU</h1><p class="bs"></p>
+ <div class="lbrand">
+  <div class="lb-id"><div class="logo"><svg class="ic"><use href="#i-db"/></svg></div>
+   <div><b class="bn">Data IT KSU</b><small class="bs"></small></div></div>
+  <div class="lb-hero">
+   <h2>Satu tempat yang aman untuk data IT perusahaan</h2>
+   <p>Daftar perangkat, jaringan, dan akun layanan tersimpan rapi dan hanya bisa dibuka dengan PIN.</p>
+   <ul class="lb-feat">
+    <li><span class="fi"><svg class="ic"><use href="#i-shield"/></svg></span><span><b>Akses sesuai peran</b>Setiap pengguna hanya melihat sheet dan sandi yang diizinkan.</span></li>
+    <li><span class="fi"><svg class="ic"><use href="#i-info"/></svg></span><span><b>Setiap perubahan tercatat</b>Riwayat lengkap dengan nama pengguna dan waktu.</span></li>
+    <li><span class="fi"><svg class="ic"><use href="#i-save"/></svg></span><span><b>Backup berkala</b>Salinan data disimpan otomatis ke Google Drive.</span></li>
+   </ul>
+  </div>
+  <div class="lb-foot">Khusus penggunaan internal perusahaan</div>
+ </div>
+ <div class="lform"><div class="lbox">
+  <div class="lkey"><svg class="ic"><use href="#i-lock"/></svg></div>
+  <h1>Masuk</h1>
   <p id="lsub">Memeriksa pengaturan PIN…</p>
   <div class="dots" id="dots"></div><div id="lmsg" role="alert"></div><div class="pad" id="pad"></div>
   <button class="btn pri lgo hide" id="lgo" onclick="submit()">Masuk</button>
- </div>
+  <div class="lfoot"><button class="tbtn thm" onclick="toggleTheme()"><span class="tic"></span><span class="thl"></span></button></div>
+ </div></div>
 </section>
 
 <div id="app" class="hide">
@@ -320,7 +358,7 @@ dialog::backdrop{background:rgba(5,10,18,.55)}
    <button class="ed adm" onclick="openName()" title="Ubah nama aplikasi" aria-label="Ubah nama aplikasi"><svg class="ic"><use href="#i-pencil"/></svg></button></div>
   <nav><p class="cap">SHEET</p><div id="sheets"></div></nav>
   <div class="sbtn">
-   <button class="nb thm" onclick="toggleTheme()" title="Ganti tema terang/gelap"><span class="tic"></span><span class="ld" id="thl">Mode gelap</span><span class="lm">Tema</span></button>
+   <button class="nb thm" onclick="toggleTheme()" title="Ganti tema terang/gelap"><span class="tic"></span><span class="ld thl">Mode gelap</span><span class="lm">Tema</span></button>
    <button class="nb adm" onclick="openOrder()" title="Urutkan sheet"><svg class="ic"><use href="#i-sort"/></svg><span class="ld">Urutkan sheet</span><span class="lm">Urutkan</span></button>
    <button class="nb adm" onclick="openUsers()" title="Pengguna dan hak akses"><svg class="ic"><use href="#i-users"/></svg><span class="ld">Pengguna &amp; akses</span><span class="lm">Pengguna</span></button>
    <button class="nb adm" onclick="openAdmin()" title="Kunci dan backup"><svg class="ic"><use href="#i-shield"/></svg><span class="ld">Kunci &amp; backup</span><span class="lm">Kunci</span></button>
@@ -377,7 +415,7 @@ dialog::backdrop{background:rgba(5,10,18,.55)}
 
 <script>
 /* ★★★ TEMPEL DISINI ★★★ URL Web App (berakhiran /exec). Tidak perlu diisi jika dibuka dari link Apps Script. */
-const SCRIPT_URL='https://script.google.com/macros/s/AKfycbxycGk6qsEsvCZEm0twO_jfo2R3YNDN0B0RN1dvSEItv0BW-2v7k1KbDuvHnpDFRZk9qw/exec';
+const SCRIPT_URL='https://script.google.com/macros/s/AKfycbwyaW6cMiq1jbp1-E8nbdk-cuDVSu06u7XqFVSleiv9kL8KOLkGwqbdCFTziIy7X2-e-A/exec';
 
 const IN_GAS=typeof google!=='undefined'&&google.script&&google.script.run;
 const HID='[[HIDDEN]]';   /* pengganti sandi yang tidak boleh dilihat pengguna ini (disamakan dengan Code.gs) */
@@ -401,7 +439,7 @@ function busy(on){busyN=Math.max(0,busyN+(on?1:-1));let b=$('busy');if(busyN>0&&
 
 /* ---------- tema ---------- */
 const effTheme=()=>document.documentElement.dataset.theme||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
-function themeUI(){const d=effTheme()==='dark';$('thl').textContent=d?'Mode terang':'Mode gelap';document.querySelectorAll('.thm .tic').forEach(e=>e.innerHTML=I(d?'sun':'moon'))}
+function themeUI(){const d=effTheme()==='dark';document.querySelectorAll('.thl').forEach(e=>e.textContent=d?'Mode terang':'Mode gelap');document.querySelectorAll('.thm .tic').forEach(e=>e.innerHTML=I(d?'sun':'moon'))}
 function toggleTheme(){const n=effTheme()==='dark'?'light':'dark';document.documentElement.dataset.theme=n;st.set('ksu_theme',n);themeUI()}
 
 /* ---------- nama aplikasi ---------- */
